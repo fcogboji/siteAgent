@@ -1,0 +1,10 @@
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# Dependencies (if you ever add root-level node_modules)
+node_modules/
