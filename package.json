@@ -1,0 +1,44 @@
+{
+  "name": "site-agent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--max-http-header-size=16384 next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:generate": "prisma generate",
+    "db:push": "dotenv -e .env.local -- prisma db push",
+    "db:push:force": "dotenv -e .env.local -- prisma db push --accept-data-loss",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^6.9.3",
+    "@prisma/client": "^6.9.0",
+    "@react-pdf/renderer": "^4.3.2",
+    "@vercel/blob": "^0.22.3",
+    "date-fns": "^4.1.0",
+    "nanoid": "^5.0.9",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-signature-canvas": "^1.0.6",
+    "recharts": "^2.15.4",
+    "resend": "^6.9.2",
+    "stripe": "^17.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-signature-canvas": "^1.0.6",
+    "cross-env": "^7.0.3",
+    "dotenv-cli": "^7.4.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "prisma": "^6.9.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
