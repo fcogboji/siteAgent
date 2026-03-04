@@ -30,6 +30,9 @@ export function TeamActivityFeed({
   people: Person[];
 }) {
   const [filterBy, setFilterBy] = useState<string>("all");
+  const uniquePeople = Array.from(
+    new Map(people.map((p) => [p.id, p])).values()
+  );
   const filtered =
     filterBy === "all"
       ? activities
@@ -47,14 +50,14 @@ export function TeamActivityFeed({
     <div className="rounded-xl border border-stone-200 bg-white">
       <div className="flex flex-col gap-2 border-b border-stone-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-sm font-semibold text-stone-900">Recent activity</h3>
-        {people.length > 1 && (
+        {uniquePeople.length > 1 && (
           <select
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value)}
             className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-700 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="all">All members</option>
-            {people.map((p) => (
+            {uniquePeople.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
               </option>

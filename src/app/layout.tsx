@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 export const dynamic = "force-dynamic";
 import "./globals.css";
@@ -26,6 +27,7 @@ export default function RootLayout({
       <html lang="en">
         <body className="antialiased">
           {children}
+          <CookieConsentBanner />
         </body>
       </html>
     </ClerkProvider>

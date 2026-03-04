@@ -7,10 +7,10 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2">
+            <Link href="/home" className="flex items-center gap-2 text-stone-900">
               <Logo className="h-10 w-10 shrink-0" />
-              <p className="text-2xl font-bold text-stone-900">Site Agent</p>
-            </div>
+              <p className="text-2xl font-bold">Site Agent</p>
+            </Link>
             <p className="mt-2 text-sm text-stone-600">
               Proof your work. Prevent disputes. Get paid.
             </p>
@@ -21,13 +21,18 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
+                <Link href="/how-it-works" className="text-sm text-stone-600 hover:text-stone-900">
+                  How it works
+                </Link>
+              </li>
+              <li>
                 <Link href="/pricing" className="text-sm text-stone-600 hover:text-stone-900">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-sm text-stone-600 hover:text-stone-900">
-                  Features
+                <Link href="/home" className="text-sm text-stone-600 hover:text-stone-900">
+                  Home
                 </Link>
               </li>
             </ul>
@@ -38,14 +43,9 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <a href="#" className="text-sm text-stone-600 hover:text-stone-900">
+                <Link href="/" className="text-sm text-stone-600 hover:text-stone-900">
                   About
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-stone-600 hover:text-stone-900">
-                  Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -55,14 +55,19 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <a href="#" className="text-sm text-stone-600 hover:text-stone-900">
-                  Privacy
-                </a>
+                <Link href="/terms" className="text-sm text-stone-600 hover:text-stone-900">
+                  Terms & conditions
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-sm text-stone-600 hover:text-stone-900">
-                  Terms
-                </a>
+                <Link href="/privacy" className="text-sm text-stone-600 hover:text-stone-900">
+                  Privacy policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/cookies" className="text-sm text-stone-600 hover:text-stone-900">
+                  Cookies
+                </Link>
               </li>
             </ul>
           </div>

@@ -62,6 +62,8 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
         signature={job.signature}
         reportSlug={job.reportSlug}
         reportUrl={reportUrl}
+        clientSignToken={job.clientSignToken ?? null}
+        clientSignedAt={job.clientSignedAt ?? null}
       />
     </div>
   );

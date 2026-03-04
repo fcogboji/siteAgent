@@ -16,7 +16,7 @@ export function Navbar({ isAdmin, showTeamLink, hasSubscription, isSignedIn }: N
     <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex min-h-[56px] max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
         <Link
-          href="/"
+          href="/home"
           className="flex min-h-[44px] min-w-[44px] shrink-0 items-center gap-2 text-lg font-bold text-stone-900"
         >
           <Logo className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" />
@@ -26,10 +26,16 @@ export function Navbar({ isAdmin, showTeamLink, hasSubscription, isSignedIn }: N
         {/* Desktop nav */}
         <nav className="hidden flex-1 items-center justify-center gap-1 sm:flex sm:gap-6" aria-label="Main">
           <Link
-            href="/"
+            href={isSignedIn ? "/" : "/home"}
             className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900"
           >
             {firstLinkLabel}
+          </Link>
+          <Link
+            href="/how-it-works"
+            className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+          >
+            How it works
           </Link>
           <Link
             href="/pricing"
@@ -103,11 +109,20 @@ export function Navbar({ isAdmin, showTeamLink, hasSubscription, isSignedIn }: N
           <ul className="flex flex-col gap-1">
             <li>
               <Link
-                href="/"
+                href={isSignedIn ? "/" : "/home"}
                 onClick={() => setMobileOpen(false)}
                 className="block min-h-[48px] rounded-xl px-4 py-3.5 text-base font-medium text-stone-700 active:bg-stone-100"
               >
                 {firstLinkLabel}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/how-it-works"
+                onClick={() => setMobileOpen(false)}
+                className="block min-h-[48px] rounded-xl px-4 py-3.5 text-base font-medium text-stone-700 active:bg-stone-100"
+              >
+                How it works
               </Link>
             </li>
             <li>

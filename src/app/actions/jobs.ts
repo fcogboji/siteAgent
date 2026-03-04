@@ -139,9 +139,10 @@ export async function generateReportSlug(jobId: string): Promise<string | null> 
   if (!job) return null;
 
   const slug = job.reportSlug ?? `r_${nanoid(12)}`;
+  const clientSignToken = nanoid(24);
   await prisma.job.update({
     where: { id: jobId },
-    data: { reportSlug: slug },
+    data: { reportSlug: slug, clientSignToken },
   });
   await recordActivity(actorId, jobId, "report_generated");
   revalidatePath(`/jobs/${jobId}`);

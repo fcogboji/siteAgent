@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useRef, useState, useEffect } from "react";
 import { addPhotoToJob, updateJobNotes, saveSignature, generateReportSlug, updatePhotoTag, type PhotoTag } from "@/app/actions/jobs";
 import { uploadPhoto } from "@/app/actions/upload";
 import { compressImageIfNeeded } from "@/lib/compress-image";
@@ -23,6 +23,8 @@ type Props = {
   signature: Signature | null;
   reportSlug: string | null;
   reportUrl: string | null;
+  clientSignToken: string | null;
+  clientSignedAt: Date | null;
 };
 
 export function JobDetailClient({
@@ -35,6 +37,8 @@ export function JobDetailClient({
   signature,
   reportSlug,
   reportUrl,
+  clientSignToken,
+  clientSignedAt,
 }: Props) {
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +52,22 @@ export function JobDetailClient({
   const [newReportSlug, setNewReportSlug] = useState<string | null>(reportSlug);
   const [newReportUrl, setNewReportUrl] = useState<string | null>(reportUrl);
   const [photoTag, setPhotoTag] = useState<"before" | "after" | "condition" | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowLeft" && photos.length > 0) {
+        setLightboxIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length));
+      }
+      if (e.key === "ArrowRight" && photos.length > 0) {
+        setLightboxIndex((i) => (i === null ? null : (i + 1) % photos.length));
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxIndex, photos.length]);
 
   function getLocationOnce(): Promise<{ latitude: number; longitude: number } | null> {
     if (!navigator.geolocation) return Promise.resolve(null);
@@ -151,6 +171,86 @@ export function JobDetailClient({
   }
 
   const reportLink = newReportUrl ?? reportUrl;
+
+function ShareReportButton({ reportUrl, jobTitle }: { reportUrl: string; jobTitle: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const shareData = {
+      title: "Proof of work report",
+      text: `Report: ${jobTitle}. View at ${reportUrl}`,
+      url: reportUrl,
+    };
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    await navigator.clipboard.writeText(reportUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      className="min-h-[48px] flex-1 rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-stone-700 hover:bg-stone-100 active:bg-stone-200 sm:p-3"
+    >
+      {copied ? "Link copied!" : "Share (SMS/WhatsApp)"}
+    </button>
+  );
+}
+
+function ClientSignLink({ reportSlug, clientSignToken }: { reportSlug: string; clientSignToken: string }) {
+  const [copied, setCopied] = useState(false);
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const signUrl = `${baseUrl}/report/${reportSlug}/sign/${clientSignToken}`;
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(signUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleShare() {
+    const shareData = { title: "Sign this report", text: "Please review and sign this report", url: signUrl };
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    await handleCopy();
+  }
+
+  return (
+    <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+      <p className="text-xs font-medium text-stone-600">Client sign link (send to client to sign — no login)</p>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="min-h-[44px] flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+        >
+          {copied ? "Copied!" : "Copy sign link"}
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="min-h-[44px] flex-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20"
+        >
+          Share link
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function PhotoTagSelect({
   jobId,
@@ -277,27 +377,34 @@ function PhotoTagSelect({
         </div>
         {photos.length > 0 && (
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {photos.map((p) => (
+            {photos.map((p, index) => (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-lg border border-stone-200">
-                {p.imageUrl.startsWith("data:") ? (
-                  <img
-                    src={p.imageUrl}
-                    alt={p.note || "Job photo"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <Image
-                    src={p.imageUrl}
-                    alt={p.note || "Job photo"}
-                    fill
-                    className="object-cover"
-                    unoptimized={p.imageUrl.startsWith("http")}
-                  />
-                )}
-                <span className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 text-xs text-white">
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex(index)}
+                  className="absolute inset-0 z-0 block h-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset"
+                  aria-label="View photo full screen"
+                >
+                  {p.imageUrl.startsWith("data:") ? (
+                    <img
+                      src={p.imageUrl}
+                      alt={p.note || "Job photo"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={p.imageUrl}
+                      alt={p.note || "Job photo"}
+                      fill
+                      className="object-cover"
+                      unoptimized={p.imageUrl.startsWith("http")}
+                    />
+                  )}
+                </button>
+                <span className="absolute bottom-0 left-0 right-0 z-10 bg-black/60 px-2 py-1 text-xs text-white pointer-events-none">
                   {format(new Date(p.createdAt), "d MMM HH:mm")}
                 </span>
-                <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                <span className="absolute left-1 top-1 z-10 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white pointer-events-none">
                   {p.tag === "condition"
                     ? "Condition"
                     : p.tag === "before"
@@ -306,15 +413,84 @@ function PhotoTagSelect({
                         ? "After"
                         : "—"}
                 </span>
-                <PhotoTagSelect
-                  jobId={jobId}
-                  photoId={p.id}
-                  currentTag={p.tag as PhotoTag}
-                  onUpdate={() => router.refresh()}
-                />
+                <div className="absolute right-1 top-1 z-20" onClick={(e) => e.stopPropagation()}>
+                  <PhotoTagSelect
+                    jobId={jobId}
+                    photoId={p.id}
+                    currentTag={p.tag as PhotoTag}
+                    onUpdate={() => router.refresh()}
+                  />
+                </div>
               </li>
             ))}
           </ul>
+        )}
+
+        {/* Full-screen lightbox */}
+        {lightboxIndex !== null && photos[lightboxIndex] && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
+            onClick={() => setLightboxIndex(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo full screen"
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label="Close"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {photos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxIndex((i) => (i === null ? 0 : (i - 1 + photos.length) % photos.length));
+                  }}
+                  className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white sm:left-4"
+                  aria-label="Previous photo"
+                >
+                  <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxIndex((i) => (i === null ? 0 : (i + 1) % photos.length));
+                  }}
+                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white sm:right-4"
+                  aria-label="Next photo"
+                >
+                  <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+            <div
+              className="relative max-h-full max-w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={photos[lightboxIndex].imageUrl}
+                alt={photos[lightboxIndex].note || "Job photo"}
+                className="max-h-[90vh] max-w-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded bg-black/60 px-3 py-1.5 text-sm text-white">
+              {format(new Date(photos[lightboxIndex].createdAt), "d MMM yyyy, HH:mm")}
+              {photos[lightboxIndex].tag && ` · ${photos[lightboxIndex].tag}`}
+            </p>
+          </div>
         )}
       </section>
 
@@ -384,23 +560,34 @@ function PhotoTagSelect({
           {reportGenerating ? "Generating…" : "Generate report"}
         </button>
         {reportLink && (
-          <div className="mt-4 space-y-2">
-            <Link
-              href={reportLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block min-h-[48px] rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-primary hover:bg-primary/5 active:bg-primary/10 sm:p-3"
-            >
-              Open shareable report →
-            </Link>
-            <a
-              href={`/api/report/${newReportSlug ?? reportSlug}/pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block min-h-[48px] rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-stone-700 hover:bg-stone-100 active:bg-stone-200 sm:p-3"
-            >
-              Download PDF
-            </a>
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <ShareReportButton reportUrl={reportLink} jobTitle={jobTitle} />
+              <Link
+                href={reportLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block min-h-[48px] flex-1 rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-primary hover:bg-primary/5 active:bg-primary/10 sm:p-3"
+              >
+                Open report →
+              </Link>
+              <a
+                href={`/api/report/${newReportSlug ?? reportSlug}/pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block min-h-[48px] flex-1 rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-stone-700 hover:bg-stone-100 active:bg-stone-200 sm:p-3"
+              >
+                Download PDF
+              </a>
+            </div>
+            {clientSignToken && reportSlug && !clientSignedAt && (
+              <ClientSignLink reportSlug={newReportSlug ?? reportSlug} clientSignToken={clientSignToken} />
+            )}
+            {clientSignedAt && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">
+                ✓ Client signed on {format(new Date(clientSignedAt), "d MMM yyyy, HH:mm")}
+              </p>
+            )}
           </div>
         )}
       </section>

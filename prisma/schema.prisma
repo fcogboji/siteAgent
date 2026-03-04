@@ -91,19 +91,23 @@ model JobTemplate {
 }
 
 model Job {
-  id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activities  Activity[]
-  title       String
-  clientName  String?
-  address     String?
-  notes       String?    // general job notes
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  photos      Photo[]
-  signature   Signature?
-  reportSlug  String?    @unique // for shareable link e.g. r_abc123
+  id                    String     @id @default(cuid())
+  userId                String
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activities            Activity[]
+  title                 String
+  clientName            String?
+  address               String?
+  notes                 String?    // general job notes
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  photos                Photo[]
+  signature             Signature?
+  reportSlug            String?    @unique // for shareable link e.g. r_abc123
+  clientSignToken       String?    @unique // one-time link for client to sign (cleared after sign)
+  clientSignedAt        DateTime?  // when client signed via sign link
+  clientSignatureUrl    String?    // client's signature image (data URL or blob URL)
+  clientSignedBy        String?    // name client entered when signing
 }
 
 model Photo {

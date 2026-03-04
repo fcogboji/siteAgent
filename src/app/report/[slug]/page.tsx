@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+import { ReportPhotosLightbox } from "./report-photos-lightbox";
 
 export default async function ReportPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -52,73 +52,23 @@ export default async function ReportPage({ params }: { params: Promise<{ slug: s
         )}
 
         {job.photos.length > 0 && (
-          <>
-            {(["condition", "before", "after", null] as const).map((tag) => {
-              const group = job.photos.filter((p) => (p.tag ?? null) === tag);
-              if (group.length === 0) return null;
-              const title =
-                tag === "condition"
-                  ? "Condition on arrival (damage protection)"
-                  : tag === "before"
-                    ? "Before"
-                    : tag === "after"
-                      ? "After"
-                      : "Photos";
-              return (
-                <section key={tag ?? "other"} className="border-b border-stone-200 py-6">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-                    {title} ({group.length})
-                  </h2>
-                  <ul className="mt-4 space-y-4">
-                    {group.map((p) => (
-                      <li key={p.id}>
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-stone-200">
-                          {p.imageUrl.startsWith("data:") ? (
-                            <img
-                              src={p.imageUrl}
-                              alt={p.note || "Job photo"}
-                              className="h-full w-full object-contain"
-                            />
-                          ) : (
-                            <Image
-                              src={p.imageUrl}
-                              alt={p.note || "Job photo"}
-                              fill
-                              className="object-contain"
-                              unoptimized={p.imageUrl.startsWith("http")}
-                            />
-                          )}
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-stone-500">
-                          <span>{format(new Date(p.createdAt), "d MMM yyyy, HH:mm")}</span>
-                          {p.note && <span>{p.note}</span>}
-                        </div>
-                        {p.latitude != null && p.longitude != null && (
-                          <p className="mt-1 text-xs text-stone-500">
-                            Location:{" "}
-                            <a
-                              href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              {p.latitude.toFixed(5)}, {p.longitude.toFixed(5)} — View on map
-                            </a>
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              );
-            })}
-          </>
+          <ReportPhotosLightbox
+            photos={job.photos.map((p) => ({
+              id: p.id,
+              imageUrl: p.imageUrl,
+              note: p.note,
+              tag: p.tag,
+              createdAt: p.createdAt,
+              latitude: p.latitude,
+              longitude: p.longitude,
+            }))}
+          />
         )}
 
         {job.signature && (
           <section className="py-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-              Signature
+              Contractor signature
             </h2>
             <div className="mt-2 flex items-center gap-4">
               <img
@@ -128,6 +78,27 @@ export default async function ReportPage({ params }: { params: Promise<{ slug: s
               />
               {job.signature.signedBy && (
                 <span className="text-stone-600">— {job.signature.signedBy}</span>
+              )}
+            </div>
+          </section>
+        )}
+
+        {job.clientSignedAt && job.clientSignatureUrl && (
+          <section className="py-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+              Client sign-off
+            </h2>
+            <p className="mt-1 text-xs text-stone-500">
+              Signed on {format(new Date(job.clientSignedAt), "d MMMM yyyy, HH:mm")}
+            </p>
+            <div className="mt-2 flex items-center gap-4">
+              <img
+                src={job.clientSignatureUrl}
+                alt="Client signature"
+                className="max-h-20 w-auto border-b-2 border-stone-400"
+              />
+              {job.clientSignedBy && (
+                <span className="text-stone-600">— {job.clientSignedBy}</span>
               )}
             </div>
           </section>
