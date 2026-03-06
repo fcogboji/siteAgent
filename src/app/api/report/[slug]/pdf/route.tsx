@@ -8,22 +8,23 @@ import {
   View,
   StyleSheet,
   Image,
+  Link,
   renderToBuffer,
 } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: "Helvetica", fontSize: 10 },
-  title: { fontSize: 16, marginBottom: 8, fontWeight: "bold" },
-  subtitle: { fontSize: 9, color: "#666", marginBottom: 20 },
+  page: { padding: 40, fontFamily: "Helvetica", fontSize: 11 },
+  title: { fontSize: 18, marginBottom: 8, fontWeight: "bold" },
+  subtitle: { fontSize: 11, color: "#666", marginBottom: 20 },
   section: { marginBottom: 16 },
-  label: { fontSize: 8, color: "#666", marginBottom: 2 },
-  value: { fontSize: 10 },
+  label: { fontSize: 10, color: "#666", marginBottom: 2 },
+  value: { fontSize: 12 },
   photoBlock: { marginBottom: 12 },
   photo: { width: "100%", maxHeight: 200, objectFit: "contain" },
-  photoCaption: { fontSize: 8, color: "#666", marginTop: 4 },
+  photoCaption: { fontSize: 10, color: "#666", marginTop: 4 },
   signature: { marginTop: 8, marginBottom: 4 },
   sigImg: { height: 40, width: 200 },
-  footer: { position: "absolute", bottom: 30, left: 40, right: 40, fontSize: 8, color: "#888" },
+  footer: { position: "absolute", bottom: 30, left: 40, right: 40, fontSize: 10, color: "#888" },
 });
 
 type JobForPdf = NonNullable<
@@ -108,8 +109,10 @@ function ReportDocument({ job }: { job: JobForPdf }) {
                 <Text style={styles.label}>{title}</Text>
                 {group.map((p) => (
                   <View key={p.id} style={styles.photoBlock}>
-                    {p.imageUrl.startsWith("data:") && (
-                      <Image src={p.imageUrl} style={styles.photo} />
+                    {(p.imageUrl.startsWith("data:") || p.imageUrl.startsWith("http")) && (
+                      <Link src={p.imageUrl} wrap={false}>
+                        <Image src={p.imageUrl} style={styles.photo} />
+                      </Link>
                     )}
                     <Text style={styles.photoCaption}>
                       {format(new Date(p.createdAt), "d MMM yyyy, HH:mm")}
