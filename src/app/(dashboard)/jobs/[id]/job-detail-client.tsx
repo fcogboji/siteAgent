@@ -172,13 +172,22 @@ export function JobDetailClient({
 
   const reportLink = newReportUrl ?? reportUrl;
 
-function ShareReportButton({ reportUrl, jobTitle }: { reportUrl: string; jobTitle: string }) {
+function ShareReportButton({
+  reportUrl,
+  pdfUrl,
+  jobTitle,
+}: {
+  reportUrl: string;
+  pdfUrl: string;
+  jobTitle: string;
+}) {
   const [copied, setCopied] = useState(false);
+  const shareText = `Proof of work report: ${jobTitle}\nView: ${reportUrl}\nPDF: ${pdfUrl}`;
 
   async function handleShare() {
     const shareData = {
       title: "Proof of work report",
-      text: `Report: ${jobTitle}. View at ${reportUrl}`,
+      text: shareText,
       url: reportUrl,
     };
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -189,7 +198,7 @@ function ShareReportButton({ reportUrl, jobTitle }: { reportUrl: string; jobTitl
         if ((e as Error).name === "AbortError") return;
       }
     }
-    await navigator.clipboard.writeText(reportUrl);
+    await navigator.clipboard.writeText(shareText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -200,7 +209,7 @@ function ShareReportButton({ reportUrl, jobTitle }: { reportUrl: string; jobTitl
       onClick={handleShare}
       className="min-h-[48px] flex-1 rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-stone-700 hover:bg-stone-100 active:bg-stone-200 sm:p-3"
     >
-      {copied ? "Link copied!" : "Share (SMS/WhatsApp)"}
+      {copied ? "Copied!" : "Share"}
     </button>
   );
 }
@@ -232,22 +241,13 @@ function ClientSignLink({ reportSlug, clientSignToken }: { reportSlug: string; c
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
       <p className="text-xs font-medium text-stone-600">Client sign link (send to client to sign — no login)</p>
-      <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="min-h-[44px] flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
-        >
-          {copied ? "Copied!" : "Copy sign link"}
-        </button>
-        <button
-          type="button"
-          onClick={handleShare}
-          className="min-h-[44px] flex-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20"
-        >
-          Share link
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleShare}
+        className="mt-2 w-full min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+      >
+        {copied ? "Copied!" : "Copy sign link"}
+      </button>
     </div>
   );
 }
@@ -559,20 +559,26 @@ function PhotoTagSelect({
         >
           {reportGenerating ? "Generating…" : "Generate report"}
         </button>
-        {reportLink && (
+        {reportLink && (() => {
+          const slug = newReportSlug ?? reportSlug;
+          const pdfUrl =
+            typeof window !== "undefined" && slug
+              ? `${window.location.origin}/api/report/${slug}/pdf`
+              : "";
+          return (
           <div className="mt-4 space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <ShareReportButton reportUrl={reportLink} jobTitle={jobTitle} />
+              <ShareReportButton reportUrl={reportLink} pdfUrl={pdfUrl} jobTitle={jobTitle} />
               <Link
                 href={reportLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block min-h-[48px] flex-1 rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-primary hover:bg-primary/5 active:bg-primary/10 sm:p-3"
               >
-                Open report →
+                Open report
               </Link>
               <a
-                href={`/api/report/${newReportSlug ?? reportSlug}/pdf`}
+                href={`/api/report/${slug}/pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block min-h-[48px] flex-1 rounded-lg border border-stone-200 bg-stone-50 p-4 text-center text-sm font-medium text-stone-700 hover:bg-stone-100 active:bg-stone-200 sm:p-3"
@@ -589,7 +595,8 @@ function PhotoTagSelect({
               </p>
             )}
           </div>
-        )}
+          );
+        })()}
       </section>
     </div>
   );

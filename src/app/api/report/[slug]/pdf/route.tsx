@@ -46,11 +46,27 @@ async function getJobForPdf(slug: string) {
   });
 }
 
-function ReportDocument({ job }: { job: JobForPdf }) {
+const TAG_ORDER = ["condition", "before", "after", null] as const;
+
+function getFlatPhotoIndexById(job: JobForPdf): Map<string, number> {
+  const flat = TAG_ORDER.flatMap((tag) =>
+    job.photos.filter((p) => (p.tag ?? null) === tag)
+  );
+  return new Map(flat.map((p, i) => [p.id, i]));
+}
+
+function ReportDocument({
+  job,
+  reportBaseUrl,
+}: {
+  job: JobForPdf;
+  reportBaseUrl: string;
+}) {
   const team = job.user?.teamOwned;
   const companyName = team?.name || job.user?.companyName;
   const logoUrl = team?.logoUrl;
   const companyContact = team?.companyContact;
+  const photoIndexById = getFlatPhotoIndexById(job);
 
   return (
     <Document>
@@ -93,7 +109,7 @@ function ReportDocument({ job }: { job: JobForPdf }) {
         )}
 
         {job.photos.length > 0 &&
-          (["condition", "before", "after", null] as const).map((tag) => {
+          TAG_ORDER.map((tag) => {
             const group = job.photos.filter((p) => (p.tag ?? null) === tag);
             if (group.length === 0) return null;
             const title =
@@ -107,10 +123,16 @@ function ReportDocument({ job }: { job: JobForPdf }) {
             return (
               <View key={tag ?? "other"} style={styles.section}>
                 <Text style={styles.label}>{title}</Text>
-                {group.map((p) => (
+                {group.map((p) => {
+                  const flatIndex = photoIndexById.get(p.id);
+                  const reportPhotoUrl =
+                    typeof flatIndex === "number"
+                      ? `${reportBaseUrl}#photo-${flatIndex}`
+                      : p.imageUrl;
+                  return (
                   <View key={p.id} style={styles.photoBlock}>
                     {(p.imageUrl.startsWith("data:") || p.imageUrl.startsWith("http")) && (
-                      <Link src={p.imageUrl} wrap={false}>
+                      <Link src={reportPhotoUrl} wrap={false}>
                         <Image src={p.imageUrl} style={styles.photo} />
                       </Link>
                     )}
@@ -122,7 +144,8 @@ function ReportDocument({ job }: { job: JobForPdf }) {
                         : ""}
                     </Text>
                   </View>
-                ))}
+                  );
+                })}
               </View>
             );
           })}
@@ -160,7 +183,13 @@ export async function GET(
   }
 
   try {
-    const buffer = await renderToBuffer(<ReportDocument job={job} />);
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (typeof _request.url === "string" ? new URL(_request.url).origin : "");
+    const reportBaseUrl = `${baseUrl}/report/${slug}`;
+    const buffer = await renderToBuffer(
+      <ReportDocument job={job} reportBaseUrl={reportBaseUrl} />
+    );
     const body = buffer instanceof Buffer ? buffer : Buffer.from(buffer);
     return new NextResponse(new Uint8Array(body), {
       headers: {

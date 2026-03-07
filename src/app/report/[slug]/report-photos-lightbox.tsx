@@ -15,11 +15,23 @@ type Photo = {
 };
 
 export function ReportPhotosLightbox({ photos }: { photos: Photo[] }) {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const flatPhotos = photos.map((p) => ({
     ...p,
     createdAt: typeof p.createdAt === "string" ? new Date(p.createdAt) : p.createdAt,
   }));
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const openFromHash = () => {
+      const match = window.location.hash.match(/^#photo-(\d+)$/);
+      if (!match) return;
+      const i = parseInt(match[1], 10);
+      if (i >= 0 && i < flatPhotos.length) setLightboxIndex(i);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [flatPhotos.length]);
 
   useEffect(() => {
     if (lightboxIndex === null) return;
